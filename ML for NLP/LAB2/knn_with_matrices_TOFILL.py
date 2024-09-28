@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import numpy as np
 import argparse
-from math import *
+
 
 class Examples:
     """
@@ -15,6 +14,7 @@ class Examples:
     def __init__(self):
         self.gold_classes = []
         self.dict_vectors = []
+
 
 class KNN:
     """
@@ -40,15 +40,34 @@ class KNN:
 
         self.verbose = verbose
 
+    def cosine_distance(self, X1, X2):
+        """
+        Compute the cosine distance between two matrices X1 and X2
+        """
+        X1_norm = np.linalg.norm(X1, axis=1, keepdims=True)
+        X2_norm = np.linalg.norm(X2, axis=1, keepdims=True)
+        cos_dist = np.dot(X1 / X1_norm, (X2 / X2_norm).T)
+        return cos_dist
+
     def evaluate_on_test_set(self, X_test, Y_test, indices):
         """
         Evaluate the classifier on a test set
         """
-        accuracies = []
-        for k in range(1, self.K+1):
-            print(f"Evaluating on test with k={k}")
-            accuracies.append(self.evaluate(X_test, Y_test, k, indices))
-        return accuracies
+        cos_dist = self.cosine_distance(X_test, self.X_train)
+        # je dois prendre les 3 plus proches distances, en gardant les indices
+        cos_dist = np.array(cos_dist)
+        sorted_dist = cos_dist.argsort(axis=1)[:, -self.K:]
+        # [: , -self.K:] all lines, last K columns (the K nearest neighbors)
+        predictions = []
+        for doc, neighbors in enumerate(sorted_dist):
+            neighbor_classes = []
+            neighbor_classes = [self.Y_train[idx] for idx in neighbors]
+            predicted_class = max(set(neighbor_classes), key=neighbor_classes.count)
+            predictions.append(predicted_class)
+        accuracy = np.mean([pred == real for pred, real in zip(predictions, Y_test)])
+        print(f"Accuracy: {accuracy * 100:.2f}% ({accuracy * len(Y_test)}/{len(Y_test)})")
+        return accuracy
+
 
 def read_examples(infile):
     """ Reads a .examples file and returns an Examples instance.
@@ -91,8 +110,6 @@ def build_matrices(examples, w2i):
     return (X, Y)
 
 
-
-
 usage = """ DOCUMENT CLASSIFIEUR using K-NN algorithm
 
   prog [options] TRAIN_FILE TEST_FILE
@@ -130,7 +147,7 @@ print(f"Read {len(train_examples.dict_vectors)} trained (.dev) examples") # On v
 print(f"Read {len(test_examples.dict_vectors)} test (.test) examples") # On va évaluer notre KNN sur ces exemples
 
 
-#------------------------------------------------------------
+# ------------------------------------------------------------
 # Building indices for vocabulary in TRAINING examples
 
 w2i = {}
@@ -143,18 +160,25 @@ for index, word in enumerate(set_words):
     w2i[word] = index
     i2w[index] = word
 
-#------------------------------------------------------------
+# ------------------------------------------------------------
 # Organize the data into two matrices for document vectors
 #                   and two lists for the gold classes
 (X_train, Y_train) = build_matrices(train_examples, w2i)
 (X_test, Y_test) = build_matrices(test_examples, w2i)
-print(f"Trained (.dev) matrix has shape {X_train.shape}") # 
+print(f"Trained (.dev) matrix has shape {X_train.shape}")
 print(f" Testing (.test) matrix has shape {X_test.shape}")
-myclassifier = KNN(X = X_train,
-                   Y = Y_train,
-                   K = args.k,
-                   weight_neighbors = args.weight_neighbors,
+myclassifier = KNN(X=X_train,
+                   Y=Y_train,
+                   K=args.k,
+                   weight_neighbors=args.weight_neighbors,
                    verbose=args.verbose)
 
-# print("Evaluating on test...")
-# accuracies = myclassifier.evaluate_on_test_set(X_test, Y_test, i2w)
+print("Evaluating on test...")
+for k in range(1, args.k + 1):
+    print(f"K = {k}")
+    myclassifier = KNN(X=X_train,
+                   Y=Y_train,
+                   K=k,
+                   weight_neighbors=args.weight_neighbors,
+                   verbose=args.verbose)
+    accuracies = myclassifier.evaluate_on_test_set(X_test, Y_test, i2w)
