@@ -74,9 +74,7 @@ class KNN:
         """
         if self.cos_dist == "similarity":
             sorted_dist = self.cosine_similarity_sorted(X_test, self.X_train)
-            print(f"sorted_dist: {sorted_dist}")
             sorted_dist_indices = np.argsort(sorted_dist, axis=1)
-            print(f"sorted_dist_indices: {sorted_dist_indices}")
         elif self.cos_dist == "distance":
             sorted_dist = self.calc_distance(X_test, self.X_train)
             sorted_dist_indices = np.argsort(sorted_dist, axis=1)
@@ -84,7 +82,6 @@ class KNN:
         sorted_dist_indices = sorted_dist_indices[:, -self.K:]
         # [: , -self.K:] all lines, last K columns (the K nearest neighbors)
         predictions = []
-        print(f"sorted_dist_indices: {sorted_dist_indices}")
         for doc, neighbors in enumerate(sorted_dist_indices):
             neighbor_classes = {}
             if self.weight_neighbors:
@@ -99,8 +96,6 @@ class KNN:
                         neighbor_classes[Y_train[idx]] = 1
                     else:
                         neighbor_classes[Y_train[idx]] += 1
-            print(f"Doc {doc} neighbors: {neighbor_classes}")
-            print(f"Neighbors_classes: {neighbor_classes}")
             predicted_class = max(neighbor_classes, key=neighbor_classes.get)
             predictions.append(predicted_class)
         accuracy = np.mean([pred == real for pred, real in zip(predictions, Y_test)])
