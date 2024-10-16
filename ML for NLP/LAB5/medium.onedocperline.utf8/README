@@ -1,0 +1,15 @@
+Extract of the "Reuters 21578" dataset, in "one document per line" format.
+
+- medium :
+  -- train : 2000 first SGM reuters train documents
+  test and dev are taken from the original test set:
+  -- test : first 200 SGM reuters test documents
+  -- dev : next 200 SGM reuters test documents
+
+NB: in this format, the multilabel cases have been kept
+(gold classes are comma-separated)
+
+NB: the *.examples format has been artificially turned into a single-label dataset:
+    documents having more than one gold class have been duplicated in the .examples
+
+    For this reason the .dev.examples and the .dev.onedocperline do not contain exactly the same documents
